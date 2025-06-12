@@ -147,7 +147,12 @@ try {
 
 // Enhanced error handling middleware
 const errorHandler = (err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('Error details:', {
+    message: err.message,
+    stack: err.stack,
+    name: err.name,
+    code: err.code
+  });
   
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
@@ -160,13 +165,26 @@ const errorHandler = (err, req, res, next) => {
       error: 'File upload error',
       details: err.message 
     });
-    }
+  }
 
   if (err.name === 'S3Error') {
     return res.status(500).json({
       error: 'Storage error',
       details: err.message,
       code: err.code
+    });
+  }
+
+  // Log MongoDB connection errors
+  if (err.name === 'MongoServerError' || err.name === 'MongooseError') {
+    console.error('MongoDB Error:', {
+      name: err.name,
+      message: err.message,
+      code: err.code
+    });
+    return res.status(500).json({
+      error: 'Database error',
+      details: 'Unable to process request due to database issues'
     });
   }
   
@@ -196,6 +214,13 @@ app.post('/api/upload',
       const key = `uploads/${Date.now()}-${file.originalname}`;
 
       try {
+        console.log('Attempting to upload to S3:', {
+          bucket: BUCKET_NAME,
+          key: key,
+          fileSize: file.size,
+          mimeType: file.mimetype
+        });
+
         const command = new PutObjectCommand({
           Bucket: BUCKET_NAME,
           Key: key,
@@ -204,6 +229,7 @@ app.post('/api/upload',
         });
 
         await s3Client.send(command);
+        console.log('Successfully uploaded to S3');
 
         // Save file metadata to MongoDB
         const fileDoc = new File({
@@ -216,6 +242,7 @@ app.post('/api/upload',
         });
 
         await fileDoc.save();
+        console.log('Successfully saved file metadata to MongoDB');
 
         res.json({
           success: true,
@@ -224,6 +251,12 @@ app.post('/api/upload',
           fileId: fileDoc._id
         });
       } catch (s3Error) {
+        console.error('S3 Upload Error:', {
+          error: s3Error.message,
+          code: s3Error.code,
+          requestId: s3Error.$metadata?.requestId
+        });
+
         // Clean up any partial uploads
         try {
           const deleteCommand = new DeleteObjectCommand({
@@ -238,6 +271,11 @@ app.post('/api/upload',
         throw s3Error;
       }
     } catch (error) {
+      console.error('Upload endpoint error:', {
+        error: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       next(error);
     }
   }
