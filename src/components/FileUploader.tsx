@@ -121,8 +121,8 @@ export function FileUploader() {
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
-              file.status = 'completed';
-              file.progress = 100;
+      file.status = 'completed';
+      file.progress = 100;
               resolve();
             } catch (error: unknown) {
               const errorMessage = error instanceof Error ? error.message : 'Unknown error';

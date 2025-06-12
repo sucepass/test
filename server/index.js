@@ -109,7 +109,7 @@ const validateS3Config = () => {
     'AWS_ACCESS_KEY_ID',
     'AWS_SECRET_ACCESS_KEY',
     'AWS_REGION',
-    'S3_BUCKET_NAME'
+    'AWS_BUCKET_NAME'
   ];
 
   const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -119,7 +119,7 @@ const validateS3Config = () => {
   }
 
   if (!BUCKET_NAME) {
-    throw new Error('S3_BUCKET_NAME is not configured');
+    throw new Error('AWS_BUCKET_NAME is not configured');
   }
 };
 
@@ -147,7 +147,7 @@ const errorHandler = (err, req, res, next) => {
       error: 'File upload error',
       details: err.message 
     });
-  }
+    }
 
   if (err.name === 'S3Error') {
     return res.status(500).json({
