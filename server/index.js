@@ -65,19 +65,9 @@ const connectWithRetry = async () => {
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Retrying connection in 5 seconds...');
-      setTimeout(connectWithRetry, 5000);
-    } else {
-      throw err; // In production, we want to fail fast
-    }
+    throw err; // In serverless, we want to fail fast
   }
 };
-
-// Only attempt to connect to MongoDB if we're not in a serverless environment
-if (process.env.NODE_ENV !== 'production') {
-  connectWithRetry();
-}
 
 // File Schema
 const fileSchema = new mongoose.Schema({
@@ -210,6 +200,9 @@ app.post('/api/upload',
   upload.single('file'),
   async (req, res, next) => {
     try {
+      // Connect to MongoDB for each request in serverless environment
+      await connectWithRetry();
+
       // Validate S3 configuration before processing
       validateS3Config();
 
@@ -254,6 +247,9 @@ app.post('/api/upload',
         await fileDoc.save();
         console.log('Successfully saved file metadata to MongoDB');
 
+        // Close MongoDB connection
+        await mongoose.connection.close();
+
         res.json({
           success: true,
           key,
@@ -278,6 +274,8 @@ app.post('/api/upload',
           console.error('Failed to clean up partial upload:', cleanupError);
         }
 
+        // Close MongoDB connection
+        await mongoose.connection.close();
         throw s3Error;
       }
     } catch (error) {
@@ -286,6 +284,12 @@ app.post('/api/upload',
         stack: error.stack,
         name: error.name
       });
+      // Ensure MongoDB connection is closed
+      try {
+        await mongoose.connection.close();
+      } catch (closeError) {
+        console.error('Error closing MongoDB connection:', closeError);
+      }
       next(error);
     }
   }

@@ -26,7 +26,9 @@ interface FileWithMeta extends File {
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_CONCURRENT_UPLOADS = 2; // Maximum number of concurrent uploads
 const MAX_RETRIES = 3; // Maximum number of retry attempts
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://test-five-blue-j2pri7a5m9.vercel.app'
+  : (import.meta.env.VITE_API_URL || 'http://localhost:3001');
 
 export function FileUploader() {
   // State for managing files and UI
