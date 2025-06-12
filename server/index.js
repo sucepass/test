@@ -109,7 +109,7 @@ const validateS3Config = () => {
     'AWS_ACCESS_KEY_ID',
     'AWS_SECRET_ACCESS_KEY',
     'AWS_REGION',
-    'AWS_BUCKET_NAME'
+    'S3_BUCKET_NAME'
   ];
 
   const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -119,7 +119,7 @@ const validateS3Config = () => {
   }
 
   if (!BUCKET_NAME) {
-    throw new Error('AWS_BUCKET_NAME is not configured');
+    throw new Error('S3_BUCKET_NAME is not configured');
   }
 };
 
