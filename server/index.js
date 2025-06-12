@@ -58,16 +58,26 @@ const uploadLimiter = rateLimit({
 // MongoDB connection with retry logic
 const connectWithRetry = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
-    console.log('Retrying connection in 5 seconds...');
-    setTimeout(connectWithRetry, 5000);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Retrying connection in 5 seconds...');
+      setTimeout(connectWithRetry, 5000);
+    } else {
+      throw err; // In production, we want to fail fast
+    }
   }
 };
 
-connectWithRetry();
+// Only attempt to connect to MongoDB if we're not in a serverless environment
+if (process.env.NODE_ENV !== 'production') {
+  connectWithRetry();
+}
 
 // File Schema
 const fileSchema = new mongoose.Schema({
@@ -328,24 +338,29 @@ app.get('/health', (req, res) => {
 // Apply error handling middleware
 app.use(errorHandler);
 
-// Start server only after MongoDB connection is established
-mongoose.connection.once('open', () => {
+// Export the app for Vercel
+export default app;
+
+// Only start the server if we're not in a serverless environment
+if (process.env.NODE_ENV !== 'production') {
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
     console.log(`Health check available at http://localhost:${port}/health`);
   });
-});
+}
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
-  // Perform cleanup if needed
-  process.exit(1);
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  // Perform cleanup if needed
-  process.exit(1);
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
 }); 
