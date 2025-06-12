@@ -26,14 +26,20 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'https://test-five-blue-j2pri7a5m9.vercel.app/'],
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://your-vercel-domain.vercel.app'] 
+    : ['http://localhost:5173', 'http://localhost:3000'],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
 app.use(compression());
 app.use(express.json());
 app.use(morgan('combined'));
-app.use(express.static(path.join(__dirname, '../dist')));
+
+// Only serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../dist')));
+}
 
 // Rate limiting
 const uploadLimiter = rateLimit({
