@@ -26,7 +26,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'https://test-five-blue-j2pri7a5m9.vercel.app/'],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
