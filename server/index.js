@@ -27,18 +27,25 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-vercel-domain.vercel.app'] 
+    ? ['https://test-five-blue-j2pri7a5m9.vercel.app'] 
     : ['http://localhost:5173', 'http://localhost:3000'],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
+  credentials: true
 }));
 app.use(compression());
 app.use(express.json());
 app.use(morgan('combined'));
 
-// Only serve static files in production
+// Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
+  const distPath = path.join(__dirname, '../dist');
+  app.use(express.static(distPath));
+  
+  // Serve index.html for all other routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
 }
 
 // Rate limiting
